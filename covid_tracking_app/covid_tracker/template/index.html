@@ -1,0 +1,636 @@
+{% extends 'base.html' %}
+{%load static%}
+
+<!-- Custom title for this template-->
+{%block title%} Simple corona virus tracker {%endblock%}
+
+<!-- Custom links for this template-->
+{% block headlinks %}
+<link href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/base/jquery-ui.css" rel="stylesheet">
+<link href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+{%endblock%}
+
+<!-- Headline message -->
+{%block headline%}
+There are currently <strong style="color:Red;">
+    {{totalInfectionCases}}</strong> COVID-19 infection cases worldwide.
+<br />
+<small>Last updated: {{lastUpdateDate}}</small>
+{%endblock%}
+
+{%block body%}
+
+    <!-- Content Row -->         
+    <div class="row">
+                                
+        <!-- Area Chart -->
+        <div class="col-xl-4 col-lg-3">
+                    <div class="card shadow mb-4">
+
+                        <!-- Card Header - Dropdown -->
+                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                            <h6 class="m-0 font-weight-bold text-primary"> Infections by country</h6>
+
+                        </div>
+
+                        <div class="card-body">
+
+                            <!-- Chart data -->
+                            <div class="col-xl-4 col-lg-3" style="float:left; max-height: 650px; max-width: 400px; overflow: scroll; overflow-x:hidden;">
+                                                
+                                <div class="col-xl-12 col-lg-11" style="float: left;">
+                                    <div class="col-md-4" style="float: left;">
+       
+                                        <form method="POST" enctype="multipart/form-data" action="selectCountry">
+                                            {% csrf_token %}
+                                                
+                                            {% for con in country%}
+                                            <input type="submit" value="{{con}}"  name="countryName" class="btn btn-outline-primary btn-sm"
+                                            style="width:100px; font-size: xx-small;">
+               
+                                            {% endfor %}
+                                        </form>    
+                                    </div>
+
+                                    <div class="col-md-8" style="float: left;">
+                                        
+                                            <canvas id="myChart" style="width: 400px; height:10000px;"></canvas>
+                                        
+                                    </div>
+                                </div>
+                            </div>
+
+
+                        </div>
+                    </div>
+        </div>
+                                
+        <!-- World Map Chart -->
+        <div class="col-xl-8 col-lg-9">
+            <div class="card shadow mb-4">
+                        
+            <!-- Card Header - Dropdown -->
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <form method="POST" enctype="multipart/form-data" action="dashboard">
+                    {% csrf_token %}
+                
+                    <input type="submit" value="To world map" name="countryName" class="btn btn-outline-primary btn-md"
+                        >
+                
+                </form>
+                
+            </div>
+
+            <!-- Card Body -->
+            <div class="card-body">
+                
+                <!-- Map data -->
+                <!-- toggle between world map and stats graphs-->
+                {%if showMap == "True" %}
+                    <div id="demo-wrapper">
+                        <div id="mapBox">
+                            <div id="up"></div>
+                                            
+                            <div class="selector">
+                                <button id="btn-prev-map" class="prev-next"><i class="fa fa-angle-left"></i></button>
+                                <select id="mapDropdown" class="ui-widget combobox"></select>
+                                <button id="btn-next-map" class="prev-next"><i class="fa fa-angle-right"></i></button>
+                            </div>
+                                            
+                            <div id="my_map" style="float:left; height: 650px;""></div>
+                        </div>
+                                            
+                        <div id="sideBox">
+                            <input type="checkbox" id="chkDataLabels" checked='checked' />
+                            <label for="chkDataLabels" style="display: inline">Data labels</label>
+                        </div>
+                    </div>
+                {%elif showMap == "False"%}
+                    <!-- Plot statistics -->
+                    <h2 style="text-align: center;">{{selectedCountry}} statistics</h2><br>
+                    
+                    <figure class="highcharts-figure" style="height:580px;">
+                        <div id="statsChart"></div>
+                    </figure>
+                {%endif%}
+            </div>
+            </div>
+        </div>
+    </div>
+                                
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.js"></script>
+
+        <script>
+            var ctx = document.getElementById('myChart').getContext('2d');
+            var chartOptions = {
+                legend:{display:false},
+                scales:{
+                    xAxes:[{
+                        barPercentage:1
+                    }],
+                    yAxes:[
+                        //{barPercentage:1},
+                        //{gridLines:{drawBorder:false}},
+                        {ticks: {display:false}},
+                        //{ticks: {mirror: true}},
+                        {display:false},
+                    ],
+                elements:{
+                    rectangle:{
+                        borderSkipped: 'left',
+                    }
+                }
+                }
+            };
+            var myChart = new Chart(ctx, {
+                type: 'horizontalBar',
+                data: {
+                    labels: {{country|safe}},
+                    datasets: [{
+                        label: '# infected',
+                        data: {{infections|safe}},
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.2)',
+                            'rgba(54, 162, 235, 0.2)',
+                            'rgba(255, 206, 86, 0.2)',
+                            'rgba(75, 192, 192, 0.2)',
+                            'rgba(153, 102, 255, 0.2)',
+                            'rgba(255, 159, 64, 0.2)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+
+                // configurstion options go here
+                options: chartOptions
+            });
+        </script>
+
+        <!--highcharts-->
+        <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+        <script src="https://code.highcharts.com/maps/highmaps.js"></script>
+        <script src="https://code.highcharts.com/mapdata/index.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.js"></script>
+        <script src="https://www.highcharts.com/samples/static/jquery.combobox.js"></script>
+
+        <!-- Map script -->
+        <script>
+
+            /**
+     * This is a complicated demo of Highmaps, not intended to get you up to speed
+     * quickly, but to show off some basic maps and features in one single place.
+     * For the basic demo, check out https://www.highcharts.com/maps/demo/geojson
+     * instead.
+     */
+
+                // Base path to maps
+                var baseMapPath = "https://code.highcharts.com/mapdata/",
+                    showDataLabels = false, // Switch for data labels enabled/disabled
+                    mapCount = 0,
+                    searchText,
+                    mapOptions = '';
+
+                // Populate dropdown menus and turn into jQuery UI widgets
+                $.each(Highcharts.mapDataIndex, function (mapGroup, maps) {
+                    if (mapGroup !== "version") {
+                        mapOptions += '<option class="option-header">' + mapGroup + '</option>';
+                        $.each(maps, function (desc, path) {
+                            mapOptions += '<option value="' + path + '">' + desc + '</option>';
+                            mapCount += 1;
+                        });
+                    }
+                });
+                searchText = 'Search ' + mapCount + ' maps';
+                mapOptions = '<option value="custom/world.js">' + searchText + '</option>' + mapOptions;
+                $("#mapDropdown").append(mapOptions).combobox();
+
+                // Change map when item selected in dropdown
+                $("#mapDropdown").change(function () {
+                    var $selectedItem = $("option:selected", this),
+                        mapDesc = $selectedItem.text(),
+                        mapKey = this.value.slice(0, -3),
+                        svgPath = baseMapPath + mapKey + '.svg',
+                        geojsonPath = baseMapPath + mapKey + '.geo.json',
+                        javascriptPath = baseMapPath + this.value,
+                        isHeader = $selectedItem.hasClass('option-header');
+
+                    // Dim or highlight search box
+                    if (mapDesc === searchText || isHeader) {
+                        $('.custom-combobox-input').removeClass('valid');
+                        location.hash = '';
+                    } else {
+                        $('.custom-combobox-input').addClass('valid');
+                        location.hash = mapKey;
+                    }
+
+                    if (isHeader) {
+                        return false;
+                    }
+
+                    // Show loading
+                    if (Highcharts.charts[0]) {
+                        Highcharts.charts[0].showLoading('<i class="fa fa-spinner fa-spin fa-2x"></i>');
+                    }
+
+
+                    // When the map is loaded or ready from cache...
+                    function mapReady() {
+
+                        var mapGeoJSON = Highcharts.maps[mapKey],
+                            data = [],
+                            parent,
+                            match;
+
+                        // Update info box download links
+                        $("#download").html(
+                            '<a class="button" target="_blank" href="https://jsfiddle.net/gh/get/jquery/1.11.0/' +
+                            'highcharts/highcharts/tree/master/samples/mapdata/' + mapKey + '">' +
+                            'View clean demo</a>' +
+                            '<div class="or-view-as">... or view as ' +
+                            '<a target="_blank" href="' + svgPath + '">SVG</a>, ' +
+                            '<a target="_blank" href="' + geojsonPath + '">GeoJSON</a>, ' +
+                            '<a target="_blank" href="' + javascriptPath + '">JavaScript</a>.</div>'
+                        );
+
+                        // Generate non-random data for the map
+                        $.each(mapGeoJSON.features, function (index, feature) {
+                            data.push({
+                                key: feature.properties['hc-key'],
+                                value: index
+                            });
+                        });
+
+                        // Show arrows the first time a real map is shown
+                        if (mapDesc !== searchText) {
+                            $('.selector .prev-next').show();
+                            $('#sideBox').show();
+                        }
+
+                        // Is there a layer above this?
+                        match = mapKey.match(/^(countries\/[a-z]{2}\/[a-z]{2})-[a-z0-9]+-all$/);
+                        if (/^countries\/[a-z]{2}\/[a-z]{2}-all$/.test(mapKey)) { // country
+                            parent = {
+                                desc: 'World',
+                                key: 'custom/world'
+                            };
+                        } else if (match) { // admin1
+                            parent = {
+                                desc: $('option[value="' + match[1] + '-all.js"]').text(),
+                                key: match[1] + '-all'
+                            };
+                        }
+                        $('#up').html('');
+                        if (parent) {
+                            $('#up').append(
+                                $('<a><i class="fa fa-angle-up"></i> ' + parent.desc + '</a>')
+                                    .attr({
+                                        title: parent.key
+                                    })
+                                    .click(function () {
+                                        $('#mapDropdown').val(parent.key + '.js').change();
+                                    })
+                            );
+                        }
+
+
+                        // Instantiate chart
+                        $("#my_map").highcharts('Map', {
+
+                            title: {
+                                text: null
+                            },
+
+                            mapNavigation: {
+                                enabled: true
+                            },
+
+                            colorAxis: {
+                                min: 0,
+                                stops: [
+                                    [0, '#EFEFFF'],
+                                    [0.5, Highcharts.getOptions().colors[0]],
+                                    [1, Highcharts.color(Highcharts.getOptions().colors[0]).brighten(-0.5).get()]
+                                ]
+                            },
+
+                            legend: {
+                                layout: 'vertical',
+                                align: 'left',
+                                verticalAlign: 'bottom'
+                            },
+
+                            series: [{
+                                data: {{mapData|safe}},
+                                mapData: mapGeoJSON,
+                                joinBy: ['iso-a3', 'code3'],//'hc-key', 'key'],
+                                name: 'Random data',
+                                states: {
+                                    hover: {
+                                        color: Highcharts.getOptions().colors[2]
+                                    }
+                                },
+                                dataLabels: {
+                                    enabled: showDataLabels,
+                                    formatter: function () {
+                                        return mapKey === 'custom/world' || mapKey === 'countries/us/us-all' ?
+                                            (this.point.properties && this.point.properties['hc-a2']) :
+                                            this.point.name;
+                                    }
+                                },
+                                point: {
+                                    events: {
+                                        // On click, look for a detailed map
+                                        click: function () {
+                                            var key = this.key;
+                                            $('#mapDropdown option').each(function () {
+                                                if (this.value === 'countries/' + key.substr(0, 2) + '/' + key + '-all.js') {
+                                                    $('#mapDropdown').val(this.value).change();
+                                                }
+                                            });
+                                        }
+                                    }
+                                }
+                            }, {
+                                type: 'mapline',
+                                name: "Separators",
+                                data: Highcharts.geojson(mapGeoJSON, 'mapline'),
+                                nullColor: 'gray',
+                                showInLegend: false,
+                                enableMouseTracking: false
+                            }]
+                        });
+
+                        showDataLabels = $("#chkDataLabels").prop('checked');
+
+                    }
+
+                    // Check whether the map is already loaded, else load it and
+                    // then show it async
+                    if (Highcharts.maps[mapKey]) {
+                        mapReady();
+                    } else {
+                        $.getScript(javascriptPath, mapReady);
+                    }
+                });
+
+                // Toggle data labels - Note: Reloads map with new random data
+                $("#chkDataLabels").change(function () {
+                    showDataLabels = $("#chkDataLabels").prop('checked');
+                    $("#mapDropdown").change();
+                });
+
+                // Switch to previous map on button click
+                $("#btn-prev-map").click(function () {
+                    $("#mapDropdown option:selected").prev("option").prop("selected", true).change();
+                });
+
+                // Switch to next map on button click
+                $("#btn-next-map").click(function () {
+                    $("#mapDropdown option:selected").next("option").prop("selected", true).change();
+                });
+
+                // Trigger change event to load map on startup
+                if (location.hash) {
+                    $('#mapDropdown').val(location.hash.substr(1) + '.js');
+                } else { // for IE9
+                    $($('#mapDropdown option')[0]).attr('selected', 'selected');
+                }
+                $('#mapDropdown').change();
+
+        </script> 
+
+<script>
+
+    var someData3 = someData2;//{{ mapData| safe}};
+    Highcharts.getJSON('https://cdn.jsdelivr.net/gh/highcharts/highcharts@v7.0.0/samples/data/world-population-density.json', function (data) {
+
+        // Prevent logarithmic errors in color calulcation
+        data.forEach(function (p) {
+            p.value = (p.value < 1 ? 1 : p.value);
+        });
+
+        // Initiate the chart
+        Highcharts.mapChart('my_map1', {
+
+            chart: {
+                map: 'custom/world'
+            },
+
+            title: {
+                text: 'World Map COVID-19 Infection '
+            },
+
+            legend: {
+                title: {
+                    text: 'Infected Population',
+                    style: {
+                        color: ( // theme
+                            Highcharts.defaultOptions &&
+                            Highcharts.defaultOptions.legend &&
+                            Highcharts.defaultOptions.legend.title &&
+                            Highcharts.defaultOptions.legend.title.style &&
+                            Highcharts.defaultOptions.legend.title.style.color
+                        ) || 'black'
+                    }
+                }
+            },
+
+            mapNavigation: {
+                enabled: true,
+                buttonOptions: {
+                    verticalAlign: 'bottom'
+                }
+            },
+
+            tooltip: {
+                backgroundColor: 'none',
+                borderWidth: 0,
+                shadow: false,
+                useHTML: true,
+                padding: 0,
+                pointFormat: '<span class="f32"><span class="flag {point.properties.hc-key}">' +
+                    '</span></span> {point.name}<br>' + '<span><h4>{point.value}</h4></span>',
+                positioner: function () {
+                    return { x: 0, y: 250 };
+                }
+            },
+
+            colorAxis: {
+                min: 1,
+                max: {{ maxVal| safe}},
+        type: 'logarithmic'
+    },
+
+        series: [{
+            data: someData3,
+            joinBy: ['iso-a3', 'code3'],
+            name: 'Infected Counts',
+            states: {
+                hover: {
+                    color: '#a4edba'
+                }
+            }
+        }]
+});
+});
+
+</script>
+
+
+        <!-- stats script -->
+        <script>
+ 
+    Highcharts.chart('statsChart', {
+        chart: {
+            zoomType: 'xy'
+        },
+        title: {
+            text: '',
+            align: 'left'
+        },
+        subtitle: {
+            text: '',
+            align: 'left'
+        },
+        xAxis: [{
+            categories: {{xdata|safe}},
+            crosshair: true,
+            title:{
+                text:'Days since first record'
+            }
+        }],
+        yAxis: [{ // Primary yAxis
+            labels: {
+                format: '{value}',
+                style: {
+                    color: Highcharts.getOptions().colors[1]
+                }
+            },
+            title: {
+                text: '{{label1|safe}}',
+                style: {
+                    color: Highcharts.getOptions().colors[1]
+                }
+            },
+            opposite: true
+
+        },  { // Tertiary yAxis
+            gridLineWidth: 0,
+            title: {
+                text: '',
+                style: {
+                    color: Highcharts.getOptions().colors[2]
+                }
+            },
+            labels: {
+                format: '{value} ',
+                style: {
+                    color: Highcharts.getOptions().colors[2]
+                }
+            },
+            opposite: true
+        }, { // Secondary yAxis
+                gridLineWidth: 0,
+                title: {
+                    text: '{{label2|safe}}',
+                    style: {
+                        color: Highcharts.getOptions().colors[0]
+                    }
+                },
+                labels: {
+                    format: '{value} ',
+                    style: {
+                        color: Highcharts.getOptions().colors[0]
+                    }
+                }
+
+            }],
+        tooltip: {
+            shared: true
+        },
+        legend: {
+            layout: 'vertical',
+            align: 'left',
+            x: 80,
+            verticalAlign: 'top',
+            y: 55,
+            floating: true,
+            backgroundColor:
+                Highcharts.defaultOptions.legend.backgroundColor || // theme
+                'rgba(255,255,255,0.25)'
+        },
+        series: [ {
+            name: 'Rolling mean',
+            type: 'spline',
+            yAxis: 2,
+            data: {{ data2| safe}},
+        tooltip: {
+            valueSuffix: ' '
+        }
+        }, {
+            name: 'Infections',
+            type: 'spline',
+            yAxis: 0,
+            data:{{data1|safe}},
+            marker: {
+                enabled: false
+            },
+            dashStyle: 'shortdot',
+            tooltip: {
+                valueSuffix: ' '
+            }
+
+        }],
+        responsive: {
+            rules: [{
+                condition: {
+                    maxWidth: 500
+                },
+                chartOptions: {
+                    legend: {
+                        floating: false,
+                        layout: 'horizontal',
+                        align: 'center',
+                        verticalAlign: 'bottom',
+                        x: 0,
+                        y: 0
+                    },
+                    yAxis: [{
+                        labels: {
+                            align: 'right',
+                            x: 0,
+                            y: -6
+                        },
+                        showLastLabel: false
+                    }, {
+                        labels: {
+                            align: 'left',
+                            x: 0,
+                            y: -6
+                        },
+                        showLastLabel: false
+                    }, {
+                        visible: false
+                    }]
+                }
+            }]
+        }
+    });
+
+
+
+        </script>
+
+
+{%endblock%}
+
+{%block customscripts%} {%endblock%}
